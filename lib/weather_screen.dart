@@ -315,13 +315,16 @@ class WeatherScreenState extends State<WeatherScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // TODO: Fix deprecation
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
+        // ignore: deprecated_member_use
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
+          // ignore: deprecated_member_use
           color: colorScheme.outline.withOpacity(0.2),
           width: 1,
         ),
