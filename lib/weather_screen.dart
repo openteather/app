@@ -1,10 +1,10 @@
-import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
-import 'package:open_teather/model/forecast_data.dart';
-import 'package:weather_icons/weather_icons.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:open_teather/model/forecast_data.dart';
 import 'package:open_teather/model/weather_data.dart';
+import 'package:weather_icons/weather_icons.dart';
 
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({super.key});
@@ -22,6 +22,16 @@ class WeatherScreenState extends State<WeatherScreen> {
   void initState() {
     super.initState();
     _loadWeather();
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour < 12)return 'Good morning';
+    if (hour < 18)return 'Good afternoon';
+    if (hour < 21)return 'Good evening';
+
+    return 'Good night';
   }
 
   Future<void> _loadWeather([double? lat, double? lon]) async {
@@ -64,19 +74,19 @@ class WeatherScreenState extends State<WeatherScreen> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           throw Exception(
-              'Location permissions are denied. Please enable location services in System Preferences.');
+              'Location permissions are denied. Please enable them in your system settings.');
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         throw Exception(
-            'Location permissions are permanently denied. Please enable location services in System Preferences.');
+            'Location permissions are permanently denied. Enable them in your system settings.');
       }
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception(
-            'Location services are disabled. Please enable location services in System Preferences.');
+            'Location services are disabled. Please enable location services.');
       }
 
       return await Geolocator.getCurrentPosition(
@@ -102,16 +112,13 @@ class WeatherScreenState extends State<WeatherScreen> {
 
   IconData _getWeatherIcon(String condition) {
     final conditionLower = condition.toLowerCase();
-
     if (conditionLower.contains('sunny') || conditionLower.contains('clear')) {
       return WeatherIcons.day_sunny;
     } else if (conditionLower.contains('cloudy')) {
       return WeatherIcons.cloudy;
-    } else if (conditionLower.contains('rain') ||
-        conditionLower.contains('showers')) {
+    } else if (conditionLower.contains('rain') || conditionLower.contains('showers')) {
       return WeatherIcons.rain;
-    } else if (conditionLower.contains('thunderstorm') ||
-        conditionLower.contains('thunder')) {
+    } else if (conditionLower.contains('thunderstorm') || conditionLower.contains('thunder')) {
       return WeatherIcons.thunderstorm;
     } else if (conditionLower.contains('fog')) {
       return WeatherIcons.fog;
@@ -122,10 +129,101 @@ class WeatherScreenState extends State<WeatherScreen> {
     }
   }
 
+  void _showForecastDetails(ForecastData forecast) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Wrap(
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                forecast.dayName,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    _getWeatherIcon(forecast.condition),
+                    size: 48,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${forecast.temperature}°${forecast.temperatureUnit}',
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                forecast.condition,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (forecast.detailedForecast.isNotEmpty)
+                Text(
+                  forecast.detailedForecast,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.air,
+                    size: 20,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${forecast.windSpeed} ${forecast.windDirection}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final greeting = _getGreeting();
 
     return Scaffold(
       appBar: AppBar(
@@ -140,118 +238,154 @@ class WeatherScreenState extends State<WeatherScreen> {
       ),
       body: isLoading
           ? Center(
-              child: CircularProgressIndicator(
-                color: colorScheme.primary,
-              ),
-            )
+        child: CircularProgressIndicator(
+          color: colorScheme.primary,
+        ),
+      )
           : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: colorScheme.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Text(
-                          errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: _loadWeather,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadWeather,
-                  color: colorScheme.primary,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildCurrentWeather(),
-                        const SizedBox(height: 24),
-                        _buildForecast(),
-                      ],
+          ? Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                errorMessage!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadWeather,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadWeather,
+        color: colorScheme.primary,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24.0,
+                  horizontal: 16,
+                ),
+                child: Center(
+                  child: Text(
+                    '$greeting!',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildCurrentWeather(),
+            const SizedBox(height: 24),
+            _buildForecast(),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildCurrentWeather() {
-    if (weatherData == null) return Container();
+    if (weatherData == null) return const SizedBox();
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(
-              'Current Weather',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: colorScheme.primaryContainer
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Text(
+                'Current Weather',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
-                  children: [
-                    Icon(
-                      _getWeatherIcon(weatherData!.current.condition),
-                      size: 72,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '${weatherData!.current.temperature}°${weatherData!.current.temperatureUnit}',
-                      style: theme.textTheme.displayMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Column(
+                    children: [
+                      Icon(
+                        _getWeatherIcon(weatherData!.current.condition),
+                        size: 72,
+                        color: colorScheme.primary,
                       ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildWeatherDetail(
-                      Icons.thermostat,
-                      weatherData!.current.condition,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildWeatherDetail(
-                      Icons.air,
-                      '${weatherData!.current.windSpeed} ${weatherData!.current.windDirection}',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildWeatherDetail(
-                      Icons.location_on,
-                      '${weatherData!.location.latitude.toStringAsFixed(2)}, ${weatherData!.location.longitude.toStringAsFixed(2)}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: colorScheme.primaryContainer,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                        child: Text(
+                          '${weatherData!.current.temperature}°${weatherData!.current.temperatureUnit}',
+                          style: theme.textTheme.displayMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWeatherDetail(
+                        Icons.thermostat,
+                        weatherData!.current.condition,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildWeatherDetail(
+                        Icons.air,
+                        '${weatherData!.current.windSpeed} ${weatherData!.current.windDirection}',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildWeatherDetail(
+                        Icons.location_on,
+                        '${weatherData!.location.latitude.toStringAsFixed(2)}, ${weatherData!.location.longitude.toStringAsFixed(2)}',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -260,7 +394,6 @@ class WeatherScreenState extends State<WeatherScreen> {
   Widget _buildWeatherDetail(IconData icon, String text) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -282,14 +415,14 @@ class WeatherScreenState extends State<WeatherScreen> {
 
   Widget _buildForecast() {
     if (weatherData == null || weatherData!.forecast.isEmpty) {
-      return Container();
+      return const SizedBox();
     }
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     return Card(
-      elevation: 2,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -303,8 +436,7 @@ class WeatherScreenState extends State<WeatherScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ...weatherData!.forecast
-                .map((forecast) => _buildForecastItem(forecast)),
+            ...weatherData!.forecast.map((forecast) => _buildForecastItem(forecast)),
           ],
         ),
       ),
@@ -315,86 +447,47 @@ class WeatherScreenState extends State<WeatherScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // TODO: Fix deprecation
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          // ignore: deprecated_member_use
-          color: colorScheme.outline.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                forecast.dayName,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              Row(
-                children: [
-                  Icon(
-                    _getWeatherIcon(forecast.condition),
-                    size: 28,
-                    color: colorScheme.primary,
+        color: colorScheme.surfaceBright,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showForecastDetails(forecast),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  forecast.dayName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${forecast.temperature}°${forecast.temperatureUnit}',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      _getWeatherIcon(forecast.condition),
+                      size: 28,
+                      color: colorScheme.primary,
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            forecast.condition,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (forecast.detailedForecast.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              forecast.detailedForecast,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(
-                Icons.air,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${forecast.windSpeed} ${forecast.windDirection}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 8),
+                    Text(
+                      '${forecast.temperature}°${forecast.temperatureUnit}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
