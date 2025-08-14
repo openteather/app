@@ -27,9 +27,9 @@ class WeatherScreenState extends State<WeatherScreen> {
   String _getGreeting() {
     final hour = DateTime.now().hour;
 
-    if (hour < 12)return 'Good morning';
-    if (hour < 18)return 'Good afternoon';
-    if (hour < 21)return 'Good evening';
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    if (hour < 21) return 'Good evening';
 
     return 'Good night';
   }
@@ -116,9 +116,11 @@ class WeatherScreenState extends State<WeatherScreen> {
       return WeatherIcons.day_sunny;
     } else if (conditionLower.contains('cloudy')) {
       return WeatherIcons.cloudy;
-    } else if (conditionLower.contains('rain') || conditionLower.contains('showers')) {
+    } else if (conditionLower.contains('rain') ||
+        conditionLower.contains('showers')) {
       return WeatherIcons.rain;
-    } else if (conditionLower.contains('thunderstorm') || conditionLower.contains('thunder')) {
+    } else if (conditionLower.contains('thunderstorm') ||
+        conditionLower.contains('thunder')) {
       return WeatherIcons.thunderstorm;
     } else if (conditionLower.contains('fog')) {
       return WeatherIcons.fog;
@@ -238,72 +240,72 @@ class WeatherScreenState extends State<WeatherScreen> {
       ),
       body: isLoading
           ? Center(
-        child: CircularProgressIndicator(
-          color: colorScheme.primary,
-        ),
-      )
+              child: CircularProgressIndicator(
+                color: colorScheme.primary,
+              ),
+            )
           : errorMessage != null
-          ? Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                errorMessage!,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadWeather,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: _loadWeather,
-        color: colorScheme.primary,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 24.0,
-                  horizontal: 16,
-                ),
-                child: Center(
-                  child: Text(
-                    '$greeting!',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadWeather,
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadWeather,
+                  color: colorScheme.primary,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 24.0,
+                            horizontal: 16,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$greeting!',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildCurrentWeather(),
+                      const SizedBox(height: 24),
+                      _buildForecast(),
+                    ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildCurrentWeather(),
-            const SizedBox(height: 24),
-            _buildForecast(),
-          ],
-        ),
-      ),
     );
   }
 
@@ -318,9 +320,8 @@ class WeatherScreenState extends State<WeatherScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: colorScheme.primaryContainer
-        ),
+            borderRadius: BorderRadius.circular(16),
+            color: colorScheme.primaryContainer),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -333,8 +334,11 @@ class WeatherScreenState extends State<WeatherScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Wrap(
+                alignment: WrapAlignment.spaceEvenly,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 24,
+                runSpacing: 16,
                 children: [
                   Column(
                     children: [
@@ -436,7 +440,8 @@ class WeatherScreenState extends State<WeatherScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ...weatherData!.forecast.map((forecast) => _buildForecastItem(forecast)),
+            ...weatherData!.forecast
+                .map((forecast) => _buildForecastItem(forecast)),
           ],
         ),
       ),
